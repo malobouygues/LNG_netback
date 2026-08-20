@@ -1,0 +1,27 @@
+# macOS
+.DS_Store
+._*
+
+# Python
+__pycache__/
+*.py[cod]
+
+# Virtual environments
+venv/
+.venv
+
+# IDE
+.vscode/
+.idea/
+
+# Tooling caches
+.pytest_cache/
+.ipynb_checkpoints/
+
+# Built by python src/data.py
+*.duckdb
+
+# Local fetch script (tvDatafeed); not part of the committed toolkit
+src/fetch.py
+
+images/
