@@ -1,48 +1,47 @@
-"""Paths, market conventions and every physical assumption, each with its unit."""
+"""Paths, the contract naming convention, when each market's print becomes readable, and every
+physical assumption behind the voyage, each with its unit."""
 
 from pathlib import Path
 
-import pandas as pd
-
 ROOT = Path(__file__).resolve().parents[1]
-LNG_DIR = ROOT / "data" / "lng"
-FREIGHT_DIR = ROOT / "data" / "freight"
-FX_DIR = ROOT / "data" / "fx"
-DB_PATH = ROOT / "data" / "lng.duckdb"
-SQL_DIR = ROOT / "sql"
+DATA = ROOT / "data"
+DB = DATA / "lng.duckdb"
 
-MONTH_CODES = {"F": 1, "G": 2, "H": 3, "J": 4, "K": 5, "M": 6,
-               "N": 7, "Q": 8, "U": 9, "V": 10, "X": 11, "Z": 12}
-CODE_BY_MONTH = {number: code for code, number in MONTH_CODES.items()}
+MONTH_CODES = "FGHJKMNQUVXZ"  # futures month codes, January to December: JKMH2025 is March 2025
 
-# product -> (timezone, time of day the settle is published on the trade date)
-SETTLE_ANCHORS = {
-    "JKM": ("Asia/Singapore", pd.Timedelta(hours=16, minutes=30)),  # Platts window, no DST
-    "TTF": ("Europe/Amsterdam", pd.Timedelta(hours=17)),
-    "BLNG2": ("Europe/London", pd.Timedelta(hours=16)),  # Baltic publication
-    "BLNG3": ("Europe/London", pd.Timedelta(hours=16)),
-}
+# --- when a price becomes readable --------------------------------------------
+# Each market settles on its own wall clock, so a settle is readable from the local close on its
+# trade date. Singapore has no DST, Amsterdam and London do: every stamp goes through UTC.
+CLOSE = {"JKM": ("Asia/Singapore", "16:30:00"),   # Platts assessment window
+         "TTF": ("Europe/Amsterdam", "17:00:00"),
+         "BLNG2": ("Europe/London", "16:00:00"),  # Baltic publication
+         "BLNG3": ("Europe/London", "16:00:00")}
 
-# The vendor does not document whether a daily FX bar is stamped at the session open or its
-# close, so a bar labelled D is charged as usable only at D+1 17:00 New York.
-FX_AVAILABLE = ("America/New_York", pd.Timedelta(days=1, hours=17))
+# A row for trade date D is anchored at the New York close, the last of the four: every price on
+# the row has to have printed before it.
+ASOF = ("America/New_York", "17:00:00")
 
-# A panel row is anchored at the New York close, the last of the four market closes. Every
-# price on the row has to have printed before it.
-ASOF = ("America/New_York", pd.Timedelta(hours=17))
-TOLERANCE = pd.Timedelta(days=5)  # how long a settle may be carried, about 3 business days
+# The vendor does not say whether a daily FX bar is stamped at the session open or its close, so
+# a bar labelled D is charged as readable only at the anchor of D+1.
+FX_LAG_DAYS = 1
 
-MMBTU_PER_MWH = 3.412142  # TTF quotes EUR/MWh; JKM and the netback are USD/MMBtu
-LOAD_DAY = 15  # mid-month sailing, so the delivery month holds for a whole trade month
+# Past this a settle is stale rather than late: the row is dropped instead of carrying it on.
+TOLERANCE = "5D"
 
-CARGO_MMBTU = 3_500_000.0  # 174,000 m3 two-stroke, what it sells after heel and tank margins
+# --- the cargo ----------------------------------------------------------------
+CARGO_MMBTU = 3_500_000    # 174,000 m3 two-stroke ship, what it sells after heel and tank margins
+LOAD_DAY = 15              # sails mid-month, so one delivery month holds for a whole trade month
 BOIL_OFF_PER_DAY = 0.0015  # fraction of the remaining cargo, per laden day
-ROUND_TRIP = 2.0  # Baltic BLNG rates are round-trip: the cargo pays the ballast leg home
-PORT_DAYS = 2.0  # load plus discharge, on hire
-PORT_COST_USD = 200_000.0  # port, agency and tug fees at both ends
+ROUND_TRIP = 2             # Baltic BLNG rates are round-trip: the cargo pays the ballast leg home
+PORT_DAYS = 2              # load plus discharge, on hire
+PORT_COST_USD = 200_000    # port, agency and tug fees at both ends
+MMBTU_PER_MWH = 3.412142   # TTF quotes EUR/MWh; JKM and the netback are USD/MMBtu
 
-# route -> destination product, freight product, laden days, canal USD round trip, regas USD/MMBtu
+# Both routes load in the US Gulf. Freight is the loading-month BLNG contract, fixed when the
+# ship is; the destination is the delivery-month JKM or TTF, what the cargo sells against.
 ROUTES = {
-    "us_gulf_to_tokyo": ("JKM", "BLNG3", 20, 1_000_000.0, 0.0),
-    "us_gulf_to_rotterdam": ("TTF", "BLNG2", 10, 0.0, 0.50),
+    "tokyo": {"price": "JKM", "freight": "BLNG3", "laden_days": 20,  # via Panama
+              "canal_usd": 1_000_000, "regas_usd_mmbtu": 0.0},
+    "rotterdam": {"price": "TTF", "freight": "BLNG2", "laden_days": 10,
+                  "canal_usd": 0, "regas_usd_mmbtu": 0.50},
 }

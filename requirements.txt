@@ -1,0 +1,6 @@
+pandas
+numpy
+duckdb
+matplotlib
+jupyterlab        # to run the two notebooks
+# src/download.py alone needs tvDatafeed: pip install git+https://github.com/rongardF/tvdatafeed.git
