@@ -35,13 +35,17 @@ BOIL_OFF_PER_DAY = 0.0015  # fraction of the remaining cargo, per laden day
 ROUND_TRIP = 2             # Baltic BLNG rates are round-trip: the cargo pays the ballast leg home
 PORT_DAYS = 2              # load plus discharge, on hire
 PORT_COST_USD = 200_000    # port, agency and tug fees at both ends
-MMBTU_PER_MWH = 3.412142   # TTF quotes EUR/MWh; JKM and the netback are USD/MMBtu
 
-# Both routes load in the US Gulf. Freight is the loading-month BLNG contract, fixed when the
-# ship is; the destination is the delivery-month JKM or TTF, what the cargo sells against.
+# TTF quotes EUR/MWh; JKM and the netback are USD/MMBtu. 1 MWh = 3,600 MJ, 1 MMBtu = 1,055.056 MJ
+MMBTU_PER_MWH = 3.412142
+
+# Both routes load in the US Gulf, so the FOB cost of the cargo, Henry Hub plus liquefaction, is
+# the same on each and cancels in the arb: it is left out. Freight is the loading-month BLNG
+# contract, fixed when the ship is; the destination is the delivery-month JKM or TTF, what the
+# cargo sells against.
 ROUTES = {
     "tokyo": {"price": "JKM", "freight": "BLNG3", "laden_days": 20,  # via Panama
-              "canal_usd": 1_000_000, "regas_usd_mmbtu": 0.0},
+              "canal_usd": 1_000_000, "regas_usd_mmbtu": 0.0},       # JKM is DES LNG: no regas
     "rotterdam": {"price": "TTF", "freight": "BLNG2", "laden_days": 10,
-                  "canal_usd": 0, "regas_usd_mmbtu": 0.50},
+                  "canal_usd": 0, "regas_usd_mmbtu": 0.50},          # TTF is hub gas: regas first
 }

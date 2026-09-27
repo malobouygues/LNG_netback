@@ -32,13 +32,13 @@ def build():
                   FROM read_csv(['{c.DATA}/lng/*.csv', '{c.DATA}/freight/*.csv'],
                                 header = false, filename = true,
                                 columns = {{'trade_date': 'DATE', 'settle': 'DOUBLE'}}))
-            ORDER BY 1, 3, 4""")
+            ORDER BY product, delivery_month, trade_date""")
         con.execute(f"""
             CREATE TABLE fx AS
             SELECT trade_date, eurusd
             FROM read_csv('{c.DATA}/fx/eurusd_daily.csv', header = false,
                           columns = {{'trade_date': 'DATE', 'eurusd': 'DOUBLE'}})
-            ORDER BY 1""")
+            ORDER BY trade_date""")
 
         print(con.sql("SELECT product, COUNT(DISTINCT contract) AS contracts, MIN(trade_date), "
                       "MAX(trade_date), COUNT(*) FROM futures GROUP BY 1 ORDER BY 1"))

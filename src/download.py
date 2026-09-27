@@ -14,11 +14,11 @@ FEEDS = {"JKM": ("JKM", "NYMEX", "lng"), "TTF": ("TFM", "ICEENDEX", "lng"),
          "BLNG2": ("BG2", "NYMEX", "freight"), "BLNG3": ("BG3", "NYMEX", "freight")}
 MONTHS_BACK = 12  # the next loading program and the eleven before it
 BARS = 40         # settles per contract, the two months or so it trades
+FX_BARS = 265     # a year of daily EURUSD bars
 
 
 def save(bars, path):
-    pd.DataFrame({"date": bars.index.strftime("%Y-%m-%d"), "value": bars["close"].to_numpy()}
-                 ).to_csv(path, index=False, header=False)
+    bars["close"].to_csv(path, header=False, date_format="%Y-%m-%d")
 
 
 def main():
@@ -35,7 +35,7 @@ def main():
                 continue
             save(bars, c.DATA / folder / f"{product}{code}.csv")
             print(f"{product}{code}: {len(bars)} rows")
-    fx = tv.get_hist(symbol="EURUSD", exchange="FX_IDC", interval=Interval.in_daily, n_bars=265)
+    fx = tv.get_hist(symbol="EURUSD", exchange="FX_IDC", interval=Interval.in_daily, n_bars=FX_BARS)
     save(fx, c.DATA / "fx" / "eurusd_daily.csv")
     print(f"eurusd_daily: {len(fx)} rows")
 
