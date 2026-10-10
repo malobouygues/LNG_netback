@@ -2,10 +2,10 @@
 
     python -m src.sql
 
-Two tables. futures holds every contract's settles in the unit it is quoted in, JKM USD/MMBtu,
-TTF EUR/MWh, BLNG2 and BLNG3 USD per charter day: one csv per contract, named product, month
-code and year, so JKMH2025.csv is March 2025 JKM. fx holds the daily EURUSD bar. Both keep the
-trade date on the file; when a print became readable is data.py's business.
+One table. futures holds every contract's settles in the unit it is quoted in, JKM and NWM in
+USD/MMBtu, BLNG2 and BLNG3 in USD per charter day: one csv per contract, named product, month
+code and year, so JKMH2025.csv is March 2025 JKM. It keeps the trade date on the file; when a
+print became readable is data.py's business.
 """
 
 import duckdb
@@ -33,16 +33,9 @@ def build():
                                 header = false, filename = true,
                                 columns = {{'trade_date': 'DATE', 'settle': 'DOUBLE'}}))
             ORDER BY product, delivery_month, trade_date""")
-        con.execute(f"""
-            CREATE TABLE fx AS
-            SELECT trade_date, eurusd
-            FROM read_csv('{c.DATA}/fx/eurusd_daily.csv', header = false,
-                          columns = {{'trade_date': 'DATE', 'eurusd': 'DOUBLE'}})
-            ORDER BY trade_date""")
 
         print(con.sql("SELECT product, COUNT(DISTINCT contract) AS contracts, MIN(trade_date), "
                       "MAX(trade_date), COUNT(*) FROM futures GROUP BY 1 ORDER BY 1"))
-        print(con.sql("SELECT MIN(trade_date), MAX(trade_date), COUNT(*) FROM fx"))
 
 
 if __name__ == "__main__":

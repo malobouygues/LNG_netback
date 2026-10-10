@@ -2,11 +2,11 @@
 
 Every term is USD per loaded MMBtu, so the row subtracts exactly:
 
-    netback = dest_price - boiloff - regas - freight - canal - port
+    netback = dest_price - boiloff - freight - canal - port - working_capital - insurance
 
-The netback is what the cargo is worth FOB US Gulf. Its cost there, about 115% of Henry Hub plus
-a liquefaction fee, is the same whichever way the ship sails: it cancels in the arb
-netback_tokyo - netback_rotterdam and is left out.
+JKM and NWE are both DES prices, LNG delivered at the terminal, so no regas is subtracted. The
+netback is what the cargo is worth FOB US Gulf. Its cost there, about 115% of Henry Hub plus a
+liquefaction fee, is the same whichever way the ship sails: it cancels in the arb and is left out.
 """
 
 import pandas as pd
@@ -21,15 +21,14 @@ def netback(route, df):
     days_on_hire = r["laden_days"] * c.ROUND_TRIP + c.PORT_DAYS  # laden out, ballast home, ports
 
     out = pd.DataFrame(index=df.index)
-    if r["price"] == "TTF":  # EUR/MWh into USD/MMBtu, at the FX bar on the row
-        out["dest_price"] = df["dest_settle"] * df["eurusd"] / c.MMBTU_PER_MWH
-    else:  # JKM already is USD/MMBtu
-        out["dest_price"] = df["dest_settle"]
+    out["dest_price"] = df["dest_settle"]  # JKM and NWM both quote USD/MMBtu
     out["boiloff"] = out["dest_price"] * (1 - delivered)  # lost energy, valued at the destination
-    out["regas"] = r["regas_usd_mmbtu"] * delivered  # a terminal fee, paid on what arrives
     out["freight"] = df["freight_settle"] * days_on_hire / c.CARGO_MMBTU  # USD/day into USD/MMBtu
     out["canal"] = r["canal_usd"] / c.CARGO_MMBTU
     out["port"] = c.PORT_COST_USD / c.CARGO_MMBTU
-    out["netback"] = (out["dest_price"] - out["boiloff"] - out["regas"] - out["freight"]
-                      - out["canal"] - out["port"])
+    # the cargo is paid for at loading and sold at delivery: it is financed while it sails
+    out["working_capital"] = out["dest_price"] * c.FUNDING_RATE * r["laden_days"] / 365
+    out["insurance"] = out["dest_price"] * c.INSURANCE_RATE
+    out["netback"] = (out["dest_price"] - out["boiloff"] - out["freight"] - out["canal"]
+                      - out["port"] - out["working_capital"] - out["insurance"])
     return out
