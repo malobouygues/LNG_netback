@@ -3,4 +3,4 @@ numpy
 duckdb
 matplotlib
 jupyterlab        # to run the two notebooks
-# src/download.py alone needs tvDatafeed: pip install git+https://github.com/rongardF/tvdatafeed.git
+# src/download.py alone needs openpyxl (the DOE workbook) and tvDatafeed: pip install git+https://github.com/rongardF/tvdatafeed.git

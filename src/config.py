@@ -33,7 +33,9 @@ ROLL_DAY = 16
 # --- the ship -----------------------------------------------------------------
 # The Baltic's standard LNGC174, the ship BLNG2 and BLNG3 price: 2-stroke, 174,000 m3, boil-off
 # 0.085% a day (Baltic circular 35/23). Platts' June 2026 guide uses 0.12% laden, a fleet average.
-CARGO_MMBTU = 3_500_000      # what the 174,000 m3 sells after heel and tank margins
+# The median cargo that left the Gulf coast since November 2024 in DOE's cargo records, at about
+# 1,037 Btu per cubic foot (notebook 01, section 9)
+CARGO_MMBTU = 3_700_000
 BOIL_OFF_PER_DAY = 0.00085   # fraction of the remaining cargo, per laden day
 ROUND_TRIP = 2               # Baltic BLNG rates are round-trip: the cargo pays the ballast leg home
 PORT_DAYS = 3                # 1.5 days loading, 1.5 discharging (Platts LNG guide, June 2026)
@@ -59,3 +61,12 @@ ROUTES = {
     "rotterdam": {"price": "NWM", "freight": "BLNG2", "delivery_lag": 0,
                   "laden_days": 15, "canal_usd": 0},  # BLNG2's own 28-day RV implies 12.5
 }
+
+# --- the cargoes that actually sailed -------------------------------------------
+# DOE lists every US LNG cargo with its destination country. The two regions the netback
+# compares, by country; everything else (Latin America, Egypt, the Middle East) is left out of
+# the Asia share.
+ASIA = ["Japan", "South Korea", "China", "Taiwan", "India", "Thailand", "Singapore",
+        "Bangladesh", "Pakistan", "Philippines", "Indonesia", "Malaysia"]
+EUROPE = ["Netherlands", "France", "United Kingdom", "Spain", "Italy", "Germany", "Belgium",
+          "Poland", "Portugal", "Lithuania", "Greece", "Croatia", "Turkiye", "Finland", "Malta"]

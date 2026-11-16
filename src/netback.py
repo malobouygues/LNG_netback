@@ -14,21 +14,29 @@ import pandas as pd
 from src import config as c
 
 
-def netback(route, df):
-    """The cost stack and the netback, one row per trade date of the aligned dataset."""
-    r = c.ROUTES[route]
-    delivered = (1 - c.BOIL_OFF_PER_DAY) ** r["laden_days"]  # boil-off compounds on the remainder
-    days_on_hire = r["laden_days"] * c.ROUND_TRIP + c.PORT_DAYS  # laden out, ballast home, ports
+def netback(route, df, **changes):
+    """The cost stack and the netback, one row per trade date of the aligned dataset. Any
+    assumption can be changed by name for a sensitivity, as in
+    netback("tokyo_cape", df, laden_days=40)."""
+    p = {"cargo_mmbtu": c.CARGO_MMBTU, "boil_off_per_day": c.BOIL_OFF_PER_DAY,
+         "port_days": c.PORT_DAYS, "port_cost_usd": c.PORT_COST_USD,
+         "funding_rate": c.FUNDING_RATE, "insurance_rate": c.INSURANCE_RATE,
+         **c.ROUTES[route], **changes}
+    # boil-off compounds on what is left of the cargo
+    delivered = (1 - p["boil_off_per_day"]) ** p["laden_days"]
+    # laden out, ballast home, and the days in port
+    days_on_hire = p["laden_days"] * c.ROUND_TRIP + p["port_days"]
 
     out = pd.DataFrame(index=df.index)
     out["dest_price"] = df["dest_settle"]  # JKM and NWM both quote USD/MMBtu
     out["boiloff"] = out["dest_price"] * (1 - delivered)  # lost energy, valued at the destination
-    out["freight"] = df["freight_settle"] * days_on_hire / c.CARGO_MMBTU  # USD/day into USD/MMBtu
-    out["canal"] = r["canal_usd"] / c.CARGO_MMBTU
-    out["port"] = c.PORT_COST_USD / c.CARGO_MMBTU
+    # USD per day into USD per loaded MMBtu
+    out["freight"] = df["freight_settle"] * days_on_hire / p["cargo_mmbtu"]
+    out["canal"] = p["canal_usd"] / p["cargo_mmbtu"]
+    out["port"] = p["port_cost_usd"] / p["cargo_mmbtu"]
     # the cargo is paid for at loading and sold at delivery: it is financed while it sails
-    out["working_capital"] = out["dest_price"] * c.FUNDING_RATE * r["laden_days"] / 365
-    out["insurance"] = out["dest_price"] * c.INSURANCE_RATE
+    out["working_capital"] = out["dest_price"] * p["funding_rate"] * p["laden_days"] / 365
+    out["insurance"] = out["dest_price"] * p["insurance_rate"]
     out["netback"] = (out["dest_price"] - out["boiloff"] - out["freight"] - out["canal"]
                       - out["port"] - out["working_capital"] - out["insurance"])
     return out
